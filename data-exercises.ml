@@ -233,24 +233,37 @@ type 'a tree =
   | Leaf
   | Node of 'a * 'a tree * 'a tree
 
+(*
+   first we write a generic fold_tree function that accumulates some value
+   while iterating through a tree
+   we can run different things if we're on nodes of leaves
+   we add indexes bc it's useful in many situations (including calculating depth)
+*)
 let fold_tree on_node on_leaf acc = function
-  | Leaf -> on_leaf acc
+  | Leaf -> on_leaf 0 acc
   | node ->
     let rec loop res = function
       | [] -> res
-      | n :: ns ->
+      | (i, n) :: ns ->
         (match n with
-         | Leaf -> loop (on_leaf res) ns
-         | Node (value, left, right) -> loop (on_node value res) (left :: right :: ns))
+         | Leaf -> loop (on_leaf i res) ns
+         | Node (v, l, r) ->
+           let double_idx = 2 * i in
+           let left_idx, right_idx = double_idx + 1, double_idx + 2 in
+           loop (on_node (v, l, r) i res) ((left_idx, l) :: (right_idx, r) :: ns))
     in
-    loop acc [ node ]
+    loop acc [ 0, node ]
 ;;
 
+(* take advantage of the fact that we can tell height by index through log *)
 let depth tree =
-  let on_node _value (current, high) =
-    let next = current + 1 in
-    next, if next > high then next else high
+  let compute_height index highest_depth =
+    let new_depth = index |> Int.add 1 |> Int.to_float |> Float.log2 |> Float.to_int in
+    if new_depth > highest_depth then new_depth else highest_depth
   in
-  let on_leaf (_current, high) = 0, high in
-  fold_tree on_node on_leaf (0, 0) tree
+  let on_node _node = compute_height in
+  let on_leaf = compute_height in
+  tree |> fold_tree on_node on_leaf 0
 ;;
+
+(* Shape *)
