@@ -267,3 +267,57 @@ let depth tree =
 ;;
 
 (* Shape *)
+let rec same_shape tree_a tree_b =
+  match tree_a, tree_b with
+  | Leaf, Leaf -> true
+  | Node _, Leaf | Leaf, Node _ -> false
+  | Node (_v1, l1, r1), Node (_v2, l2, r2) -> same_shape l1 l2 && same_shape r1 r2
+;;
+
+(* List max exn *)
+let list_max_exn = function
+  | [] -> failwith "list_max"
+  | x :: xs ->
+    let rec loop max = function
+      | [] -> max
+      | n :: ns -> loop (if n > max then n else max) ns
+    in
+    loop x xs
+;;
+
+(* is_bst *)
+(*
+   A binary search tree (BST) is a binary tree with the
+   following representation invariant:
+
+   For any node n, every node in the left subtree of n has
+   a value less than n's value, and every node in the right
+   subtree of n has a value greater than n's value.
+
+   We call that the BST invariant.
+*)
+let is_bst tree =
+  let on_node (x, left, right) idx invariant =
+    match left, right with
+    | Leaf, Leaf -> invariant
+    | Node _, Leaf | Leaf, Node _ -> false
+    | Node (y, _l, _r), Node (z, _ll, _rr) -> invariant && y < x && z > x
+  in
+  tree |> fold_tree on_node (fun _ a -> a) true
+;;
+
+(* quadrant poly *)
+let sign_of' = function
+  | 0 -> `Zero
+  | a when a > 0 -> `Pos
+  | _ -> `Neg
+;;
+
+let quadrant_of' (x, y) =
+  match sign_of' x, sign_of' y with
+  | `Pos, `Pos -> Some `I
+  | `Neg, `Neg -> Some `II
+  | `Neg, `Pos -> Some `III
+  | `Pos, `Neg -> Some `IV
+  | _ -> None
+;;
